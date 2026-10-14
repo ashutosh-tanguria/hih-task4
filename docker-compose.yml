@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  api:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @oosc/api dev"
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - HOST=0.0.0.0
+      - CORS_ORIGIN=http://localhost:3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_EVALUATION_MODEL=${OPENAI_EVALUATION_MODEL:-gpt-4o-mini}
+    restart: unless-stopped
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "corepack enable && pnpm install && pnpm --filter @oosc/web dev"
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  mock-agent:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: node mock-agent.js
+    ports:
+      - "5000:5000"
+    environment:
+      - MOCK_AGENT_PORT=5000
+      - MOCK_AGENT_HOST=0.0.0.0
+    restart: unless-stopped
